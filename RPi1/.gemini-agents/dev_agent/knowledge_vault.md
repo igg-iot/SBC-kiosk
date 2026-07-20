@@ -1,0 +1,2 @@
+- Python's native `crypt` module is deprecated in Python 3.11 and completely removed in Python 3.13. For future-proofing, `provision_sd.py` should eventually migrate to a pure-Python SHA-512 crypt implementation or use an external library like `bcrypt` or `passlib` if dependencies are permitted.
+- The `os.open` with `O_CREAT | os.O_WRONLY` pattern is used to guarantee strict file creation permissions (`0600`) before writing sensitive credentials.

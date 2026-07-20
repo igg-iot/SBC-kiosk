@@ -1,0 +1,15 @@
+[Unit]
+Description=Kiosk MQTT Bridge
+After=network-online.target kiosk.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=kiosk
+Group=kiosk
+ExecStart=/usr/local/bin/kiosk-mqtt-bridge.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

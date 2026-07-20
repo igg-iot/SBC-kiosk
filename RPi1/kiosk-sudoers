@@ -1,0 +1,1 @@
+kiosk ALL=(ALL) NOPASSWD: /usr/sbin/reboot, /usr/sbin/poweroff, /usr/bin/systemctl restart kiosk, /usr/bin/tee /sys/class/graphics/fb0/blank

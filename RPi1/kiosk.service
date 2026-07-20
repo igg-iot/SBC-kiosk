@@ -1,0 +1,17 @@
+[Unit]
+Description=Minimalist Web Kiosk
+After=network-online.target wifi-init.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=kiosk
+Group=kiosk
+Environment=COG_PLATFORM_DRM_CARD=/dev/dri/card0
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1001/bus
+ExecStart=/usr/bin/cog --platform=drm --webprocess-failure=restart https://google.com
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
