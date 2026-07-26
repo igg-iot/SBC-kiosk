@@ -1,0 +1,13 @@
+[Unit]
+Description=Initialize Wi-Fi and Regulatory Domain
+Before=NetworkManager.service
+Before=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c "rfkill unblock wifi"
+ExecStart=/bin/sh -c "iw reg set US"
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

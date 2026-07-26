@@ -36,3 +36,12 @@
   3. Create `userconf.txt` with a hashed password (e.g., `pi:$6$...`) to bypass the first-boot wizard.
   4. Create `wpa_supplicant.conf` for Wi-Fi.
   5. Note that the Pi 1 A+ can power an Edimax Wi-Fi adapter directly without a hub if using a robust 2.5A power supply; boot delays during Wi-Fi init are normal and not brownouts.
+
+- **WebKit Low-Memory Tuning for 512MB Pi 1**:
+  * `WEBKIT_DISABLE_DMABUF_RENDERER=1`: Bypasses WPE WebKit's fragile `wpe_dmabuf_pool` queue manager on VideoCore IV, preventing `SIGSEGV` (status=11) crashes during dynamic DOM/canvas updates.
+  * `WPE_WEB_PROCESS_MAX_COUNT=1`: Restricts WebKit rendering to a single WebProcess, preventing memory leaks from orphaned background processes.
+  * `JSGC_EXTRA_MEMORY_THRESHOLD=1`: Forces JavaScriptCore to run aggressive Garbage Collection on tiny memory increments rather than allowing JS heap growth over time.
+  * `G_SLICE=always-malloc`: Disables GLib's internal memory slice caching, forcing freed RAM to be returned directly to the OS.
+- **KMS Display Scaling vs Monitor Links**:
+  * Passing `video=HDMI-A-1:1024x768@60D` in `cmdline.txt` causes WebKit to render into a 1024x768 framebuffer.
+  * VideoCore IV Hardware Video Scaler (HVS) hardware-upscales this 1024x768 image to a native 1080p (1920x1080) HDMI wire signal, allowing monitors to report receiving 1080p while saving ~2.7x RAM rendering footprint inside WebKit.

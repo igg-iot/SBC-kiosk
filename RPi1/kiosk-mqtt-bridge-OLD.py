@@ -66,17 +66,6 @@ def run_cogctl(action, arg=None, retries=5, delay=3.0):
                 time.sleep(delay)
     return False
 
-def restart_kiosk_service():
-    """Single Source of Truth: Restarts kiosk.service and restores active saved URL."""
-    try:
-        subprocess.run(["sudo", "systemctl", "restart", "kiosk.service"], check=True)
-        current_url = config.get("kiosk", {}).get("default_url", "https://example.com")
-        print(f"Restoring saved URL after kiosk restart: {current_url}")
-        return run_cogctl("open", current_url, retries=10, delay=2.0)
-    except Exception as e:
-        print(f"Error restarting kiosk.service: {e}", file=sys.stderr)
-        return False
-
 # Diagnostics Functions (Zero-Overhead /proc and /sys reads)
 def get_wifi_rssi():
     try:
@@ -119,29 +108,25 @@ def get_screen_power():
         return "ON"
 
 def set_screen_power(state):
+    val = "1" if state == "OFF" else "0"
     try:
-        if state == "OFF":
-            subprocess.run(["sudo", "systemctl", "stop", "kiosk.service"], check=True)
-            subprocess.run(["sudo", "tee", "/sys/class/graphics/fb0/blank"], input=b"1", check=True, stdout=subprocess.DEVNULL)
-        else:
-            subprocess.run(["sudo", "tee", "/sys/class/graphics/fb0/blank"], input=b"0", check=True, stdout=subprocess.DEVNULL)
-            restart_kiosk_service()
+        subprocess.run(["sudo", "tee", "/sys/class/graphics/fb0/blank"], input=val.encode(), check=True, stdout=subprocess.DEVNULL)
         return True
     except Exception as e:
-        print(f"Error setting screen power to {state}: {e}", file=sys.stderr)
+        print(f"Error setting screen power: {e}", file=sys.stderr)
         return False
 
 # Screen Orientation Functions
 def get_orientation():
     try:
-        with open("/etc/default/kiosk", "r") as f:
+        with open("/boot/firmware/cmdline.txt", "r") as f:
             content = f.read()
-        match = re.search(r"KIOSK_ROTATION=(\d+)", content)
+        match = re.search(r"rotate=(\d+)", content)
         if match:
             rot = match.group(1)
-            if rot == "1": return "portrait"
-            if rot == "2": return "landscape-inverted"
-            if rot == "3": return "portrait-inverted"
+            if rot == "90": return "portrait"
+            if rot == "180": return "landscape-inverted"
+            if rot == "270": return "portrait-inverted"
         return "landscape"
     except Exception:
         return "landscape"
@@ -149,16 +134,33 @@ def get_orientation():
 def update_rotation(orientation):
     rotation_map = {
         "landscape": "0",
-        "portrait": "1",
-        "landscape-inverted": "2",
-        "portrait-inverted": "3"
+        "portrait": "90",
+        "landscape-inverted": "180",
+        "portrait-inverted": "270"
     }
     rot_val = rotation_map.get(orientation, "0")
     try:
-        content = f"KIOSK_ROTATION={rot_val}\n"
-        subprocess.run(["sudo", "tee", "/etc/default/kiosk"], input=content.encode(), check=True, stdout=subprocess.DEVNULL)
-        print(f"Updated /etc/default/kiosk to KIOSK_ROTATION={rot_val}. Restarting kiosk service...")
-        return restart_kiosk_service()
+        with open("/boot/firmware/cmdline.txt", "r") as f:
+            content = f.read().strip()
+        
+        pattern = r"(video=HDMI-A-1:[^ ]+)"
+        match = re.search(pattern, content)
+        if match:
+            video_param = match.group(1)
+            video_param_clean = re.sub(r",rotate=\d+", "", video_param)
+            if rot_val != "0":
+                new_video_param = f"{video_param_clean},rotate={rot_val}"
+            else:
+                new_video_param = video_param_clean
+            new_content = content.replace(video_param, new_video_param)
+        else:
+            if rot_val != "0":
+                new_content = f"{content} video=HDMI-A-1:1024x768@60D,rotate={rot_val}"
+            else:
+                new_content = f"{content} video=HDMI-A-1:1024x768@60D"
+        
+        subprocess.run(["sudo", "tee", "/boot/firmware/cmdline.txt"], input=new_content.encode(), check=True, stdout=subprocess.DEVNULL)
+        return True
     except Exception as e:
         print(f"Error updating rotation: {e}", file=sys.stderr)
         return False
@@ -292,9 +294,11 @@ def on_message(client, userdata, msg):
         if payload in ["landscape", "portrait", "landscape-inverted", "portrait-inverted"]:
             if update_rotation(payload):
                 client.publish(f"{TOPIC_PREFIX}/orientation/state", payload, retain=True)
+                print("Rebooting to apply screen rotation...")
+                subprocess.run(["sudo", "reboot"])
                 
     elif topic == f"{TOPIC_PREFIX}/refresh/set":
-        restart_kiosk_service()
+        run_cogctl("reload", retries=3, delay=2.0)
             
     elif topic == f"{TOPIC_PREFIX}/reboot/set":
         print("Rebooting system...")

@@ -1,0 +1,4 @@
+# Gemini Agent Framework local state and secrets
+.gemini-agents/*/*.json
+*secrets.*
+secrets.*
