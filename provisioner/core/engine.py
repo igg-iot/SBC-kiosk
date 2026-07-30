@@ -105,7 +105,7 @@ default_url = "{config['kiosk']['default_url']}"
         f.write(bridge_config_content)
 
     # 6. Add the default screen orientation env file
-    shutil.copy(assets_dir / "etc-default-kiosk", "etc" / "default" / "kiosk")
+    shutil.copy(assets_dir / "etc-default-kiosk", root_path / "etc" / "default" / "kiosk")
 
 
     print("\nSUCCESS: SD card provisioned successfully!")
