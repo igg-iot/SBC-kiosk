@@ -1,7 +1,7 @@
 import sys
 import tomllib
 
-CONFIG_PATH = "/home/kiosk/.config/kiosk-mqtt-bridge/config.toml"
+CONFIG_PATH = "config.toml"
 
 def load_config():
     try:

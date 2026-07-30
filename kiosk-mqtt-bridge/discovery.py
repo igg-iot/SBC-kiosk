@@ -24,6 +24,7 @@ def publish_discovery(client, client_id, topic_prefix):
                 "unique_id": f"{client_id}_screen",
                 "state_topic": f"{topic_prefix}/screen/state",
                 "command_topic": f"{topic_prefix}/screen/set",
+                "icon": "mdi:monitor",  # Forces a screen icon instead of a toggle switch
                 "device": device_info
             }
         },
@@ -39,15 +40,17 @@ def publish_discovery(client, client_id, topic_prefix):
         },
         "button": {
             "refresh": {
-                "name": "Kiosk Refresh",
+                "name": "Refresh Browser",
                 "unique_id": f"{client_id}_refresh",
                 "command_topic": f"{topic_prefix}/refresh/set",
+                "icon": "mdi:web-refresh",          # Adds a specific browser refresh icon
                 "device": device_info
             },
             "reboot": {
                 "name": "System Reboot",
                 "unique_id": f"{client_id}_reboot",
                 "command_topic": f"{topic_prefix}/reboot/set",
+                "device_class": "restart",          # Inherits standard HA restart behaviors/icons
                 "device": device_info
             }
         },
@@ -65,6 +68,7 @@ def publish_discovery(client, client_id, topic_prefix):
                 "unique_id": f"{client_id}_free_mem",
                 "state_topic": f"{topic_prefix}/free_mem/state",
                 "unit_of_measurement": "MB",
+                "icon": "mdi:memory",               # Explicit icon for memory
                 "device": device_info
             },
             "cpu_temp": {

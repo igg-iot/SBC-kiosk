@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# provision_sd.py - Interactive, Zero-Dependency SD Card Provisioner
+# provision_sd.py - Interactive, Modular Template SD Card Provisioner
 import os
 import sys
 import getpass

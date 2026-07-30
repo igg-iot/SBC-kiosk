@@ -2,3 +2,6 @@
 .gemini-agents/*/*.json
 *secrets.*
 secrets.*
+*~
+__pycache__/
+*/provision.toml

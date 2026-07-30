@@ -14,14 +14,8 @@
   sudo usermod -aG video,render,input,netdev kiosk
   ```
 
-### 2. Regulatory Domain, RFKill Prevention & Forced HDMI Output
-* **Kernel Parameters:** Append ` cfg80211.ieee80211_regdom=US video=HDMI-A-1:1024x768@60D` to the single line in `bootfs/cmdline.txt`.
-  * *Note on `video=HDMI-A-1:1024x768@60D`:* The trailing `D` forces the digital output (HDMI) to be enabled even if no physical monitor is connected. This prevents the KMS/DRM driver from reporting 0 active connectors, which causes `cog` to crash-loop on startup with `Failed to initialize DRM`.
-  * *Screen Rotation:* To rotate the screen at the kernel/driver level (necessary because the RPi 1 GPU does not support hardware plane rotation in `cog`), append `,rotate=90` (or `180`, `270`) to the `video` parameter:
-    * **0° (Landscape):** `video=HDMI-A-1:1024x768@60D`
-    * **90° (Portrait):** `video=HDMI-A-1:1024x768@60D,rotate=90`
-    * **180° (Landscape Inverted):** `video=HDMI-A-1:1024x768@60D,rotate=180`
-    * **270° (Portrait Inverted):** `video=HDMI-A-1:1024x768@60D,rotate=270`
+### 2. Regulatory Domain, RFKill Prevention & HDMI Output
+* **Kernel Parameters:** Append ` cfg80211.ieee80211_regdom=US video=HDMI-A-1:1024x768@60` to the single line in `bootfs/cmdline.txt`.
 * **Fallback Config:** `bootfs/wpa_supplicant.conf` (0600):
   ```text
   ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev

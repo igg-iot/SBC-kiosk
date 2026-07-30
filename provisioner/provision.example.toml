@@ -1,0 +1,61 @@
+# =====================================================================
+# SBC Kiosk Provisioning Configuration
+# Rename this example file to provision.toml
+# Edit this file before running: sudo python3 provisioner/core/engine.py
+# =====================================================================
+
+[system]
+# The paths where your SD card partitions are currently mounted on your workstation.
+# On Linux, this is typically under /media/<your_username>/...
+# On Mac, it might be /Volumes/bootfs and /Volumes/rootfs
+bootfs_path = "/media/igg/bootfs"
+rootfs_path = "/media/igg/rootfs"
+
+
+
+[os]
+# The timezone for the kiosk. Uses standard IANA timezone database names.
+timezone = "America/Los_Angeles"
+# The primary administrator account (created with sudo privileges).
+admin_username = "gemini"
+admin_password = "ChangeThisSuperSecretPassword"
+
+# =====================================================================
+# Wi-Fi Configuration
+# You can define multiple networks by repeating the [[wifi]] block.
+# The kiosk will attempt to connect to them as fallbacks.
+# =====================================================================
+
+[[wifi]]
+ssid = "MyPrimaryNetwork"
+psk = "SuperSecretWiFiPassword"
+
+[[wifi]]
+ssid = "MyBackupNetwork"
+psk = "BackupPassword123"
+
+# =====================================================================
+# MQTT Bridge Configuration
+# This dictates how the kiosk connects to Home Assistant.
+# =====================================================================
+
+[mqtt]
+broker = "homeassistant.local"   # IP address or hostname of your MQTT broker
+port = 1883                      # Default MQTT port is 1883
+username = "mqtt"                # Leave empty ("") if your broker does not require authentication
+password = "mqtt"                # Leave empty ("") if no password is required
+client_id = "kiosk-display01"    # Unique identifier for this specific device
+topic_prefix = "kiosk/display"   # Base topic for Home Assistant discovery and commands
+
+[kiosk]
+# The hardware profile to use. This must match a python file in provisioner/boards/
+# For example, "rpi1" tells the engine to run provisioner/boards/rpi1.py
+hardware_profile = "rpi1"
+
+# video resolution and frequency
+# video = "1920x1080@60"
+# video = "1280x720@60"
+video = "1024x768@60"
+
+# The URL the browser will load on startup and whenever a refresh is commanded.
+default_url = "https://example.com/home-assistant-dashboard"

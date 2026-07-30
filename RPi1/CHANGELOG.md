@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased] - 2025-07-26
+
+### Changed
+- **Asset Directory Structure**: Relocated `kiosk-mqtt-bridge.py` into `assets/` via `git mv` so all target configuration templates, systemd service units, and executable scripts reside cleanly under `assets/`.
+- **Documentation**: Updated `README.md` with a complete Deployment Asset Mapping matrix detailing target installation paths (`/etc/systemd/system/`, `/etc/default/`, `/etc/sudoers.d/`, `/home/kiosk/`, `/etc/NetworkManager/conf.d/`), file ownership, and permission masks (`0440`, `0644`, `0755`) for all system assets.
+
 ## [Unreleased] - 2026-07-26
 
 ### Added
