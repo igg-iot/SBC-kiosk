@@ -45,3 +45,26 @@
 - **KMS Display Scaling vs Monitor Links**:
   * Passing `video=HDMI-A-1:1024x768@60D` in `cmdline.txt` causes WebKit to render into a 1024x768 framebuffer.
   * VideoCore IV Hardware Video Scaler (HVS) hardware-upscales this 1024x768 image to a native 1080p (1920x1080) HDMI wire signal, allowing monitors to report receiving 1080p while saving ~2.7x RAM rendering footprint inside WebKit.
+
+# Kiosk System Orchestration Guide
+
+## 1. Operational Shift
+
+The system has moved from a `systemd`-managed browser to a `kiosk-wrapper.sh` managed lifecycle. This eliminates "crash-cycling" by delegating process management to a script that polls hardware status, ensuring the browser only runs when the monitor is active.
+
+## 2. Orchestration Logic
+
+- **Polling:** The wrapper polls `/sys/class/drm/card0-HDMI-A-1/status` to determine monitor connection state.
+- **Bridge Synchronization:** Cog is launched as a background process. The script waits 5 seconds for GPU initialization before restarting the `kiosk-mqtt-bridge`. This forces the bridge to re-sync and issue the "Takeover URL" command only after the browser is confirmed visible, eliminating race conditions.
+
+## 3. Execution Flow
+
+1. **System Startup:** Wrapper starts.
+2. **Monitor OFF:** Wrapper detects `disconnected` and loops with a 10s sleep (0% CPU/IO usage).
+3. **Monitor ON:** Wrapper detects `connected`, launches Cog, waits 5s, restarts the bridge, then blocks (`wait $COG_PID`) until Cog exits.
+4. **Cleanup:** Once Cog dies, the loop resumes polling.
+
+## 4. Maintenance
+
+- **Logs:** Debugging should focus on the wrapper script output.
+- **Configuration:** The wrapper remains intentionally configuration-agnostic; the Bridge service remains the single source of truth for URL state.

@@ -7,7 +7,7 @@ echo "Starting Kiosk First-Boot Provisioning..."
 # 1. Update and Install Dependencies
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y cog libgles2 python3-paho-mqtt
+apt-get install -y cog libgles2 gstreamer1.0-plugins-base gstreamer1.0-plugins-good python3-paho-mqtt
 
 # 2. Create User and Group Permissions
 if ! id -u kiosk > /dev/null 2>&1; then

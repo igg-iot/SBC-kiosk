@@ -14,7 +14,7 @@ Environment=WPE_WEB_PROCESS_MAX_COUNT=1
 Environment=JSGC_EXTRA_MEMORY_THRESHOLD=1
 Environment=G_SLICE=always-malloc
 ExecStartPre=/bin/sh -c 'echo 0 | sudo /usr/bin/tee /sys/class/vtconsole/vtcon1/bind >/dev/null 2>&1 || true'
-ExecStart=/usr/bin/cog -P drm -O renderer=gles,rotation=${KIOSK_ROTATION} --webprocess-failure=restart https://example.com
+ExecStart=/home/kiosk/bin/kiosk-wrapper.sh
 Restart=always
 RestartSec=3
 

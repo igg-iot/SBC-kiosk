@@ -8,7 +8,7 @@ Type=simple
 User=kiosk
 Group=kiosk
 Environment=PYTHONUNBUFFERED=1
-ExecStart=/usr/local/bin/kiosk-mqtt-bridge.py
+ExecStart=/home/kiosk/bin/kiosk-mqtt-bridge.py
 Restart=always
 RestartSec=5
 

@@ -66,13 +66,17 @@ def run_cogctl(action, arg=None, retries=5, delay=3.0):
                 time.sleep(delay)
     return False
 
+def load_current_url ():
+    current_url = config["kiosk"]["default_url"]
+    print(f"Restoring saved URL: {current_url}")
+    return run_cogctl("open", current_url, retries=10, delay=2.0)
+
 def restart_kiosk_service():
     """Single Source of Truth: Restarts kiosk.service and restores active saved URL."""
     try:
         subprocess.run(["sudo", "systemctl", "restart", "kiosk.service"], check=True)
-        current_url = config.get("kiosk", {}).get("default_url", "https://example.com")
-        print(f"Restoring saved URL after kiosk restart: {current_url}")
-        return run_cogctl("open", current_url, retries=10, delay=2.0)
+        time.sleep (10)
+        return load_current_url()
     except Exception as e:
         print(f"Error restarting kiosk.service: {e}", file=sys.stderr)
         return False
@@ -299,6 +303,9 @@ def on_message(client, userdata, msg):
     elif topic == f"{TOPIC_PREFIX}/reboot/set":
         print("Rebooting system...")
         subprocess.run(["sudo", "reboot"])
+
+# Load the current URL
+load_current_url()
 
 # Main Loop
 client = mqtt.Client(client_id=CLIENT_ID)
