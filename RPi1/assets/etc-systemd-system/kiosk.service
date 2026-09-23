@@ -7,8 +7,6 @@ Wants=network-online.target
 Type=simple
 User=kiosk
 Group=kiosk
-EnvironmentFile=/etc/default/kiosk
-Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1001/bus
 Environment=WEBKIT_DISABLE_DMABUF_RENDERER=1
 Environment=WPE_WEB_PROCESS_MAX_COUNT=1
 Environment=JSGC_EXTRA_MEMORY_THRESHOLD=1

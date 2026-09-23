@@ -1,0 +1,17 @@
+[mqtt]
+broker = "homeassistant.local"
+port = 1883
+username = "mqtt"
+password = "mqtt"
+client_id = "display-kiosk-01"
+topic_prefix = "display-kiosk/01"
+
+[device]
+name = "Back Desk Display"
+model = "Pi 1 Model A+"
+manufacturer = "Raspberry Pi"
+sw_version = "1.0"
+
+[kiosk]
+default_url = "https://sm-digital-toolbox.noisy-leaf-680c.workers.dev/today/"
+orientation = 1

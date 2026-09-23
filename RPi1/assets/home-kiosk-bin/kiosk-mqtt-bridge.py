@@ -21,29 +21,27 @@ def load_config():
 
 config = load_config()
 MQTT_BROKER = config["mqtt"]["broker"]
+ROTATION_MAP = {
+    "landscape": 0,
+    "portrait": 1,
+    "landscape-inverted": 2,
+    "portrait-inverted": 3
+}
+INV_ROTATION_MAP = {v: k for k, v in ROTATION_MAP.items()}
 
-def update_config_url(new_url):
-    try:
-        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-            lines = f.readlines()
-        
-        for i, line in enumerate(lines):
-            if line.strip().startswith("default_url"):
-                lines[i] = f'default_url = "{new_url}"\n'
-                break
-                
-        with open(CONFIG_PATH, "w", encoding="utf-8") as f:
-            f.writelines(lines)
-        return True
-    except Exception as e:
-        print(f"Error updating config.toml: {e}", file=sys.stderr)
-        return False
-
-MQTT_PORT = config["mqtt"].get("port", 1883)
+MQTT_PORT = config["mqtt"]["port"]
 MQTT_USER = config["mqtt"].get("username")
 MQTT_PASSWORD = config["mqtt"].get("password")
-CLIENT_ID = config["mqtt"].get("client_id", "kiosk-pi")
-TOPIC_PREFIX = config["mqtt"].get("topic_prefix", "kiosk/pi")
+CLIENT_ID = config["mqtt"]["client_id"]
+TOPIC_PREFIX = config["mqtt"]["topic_prefix"]
+DEVICE_INFO = {
+        "identifiers": [CLIENT_ID],
+        "name": config["device"]["name"],
+        "model": config["device"]["model"],
+        "manufacturer": config["device"]["manufacturer"],
+        "sw_version": config["device"]["sw_version"]
+}
+
 
 def run_cogctl(action, arg=None, retries=5, delay=3.0):
     """Executes cogctl commands (open, reload) with retry logic to handle D-Bus startup latency."""
@@ -52,7 +50,8 @@ def run_cogctl(action, arg=None, retries=5, delay=3.0):
         cmd.append(arg)
     
     env = dict(os.environ)
-    env["DBUS_SESSION_BUS_ADDRESS"] = "unix:path=/run/user/1001/bus"
+    uid = os.getuid()
+    env["DBUS_SESSION_BUS_ADDRESS"] = f"unix:path=/run/user/{uid}/bus"
     
     for attempt in range(1, retries + 1):
         try:
@@ -135,37 +134,34 @@ def set_screen_power(state):
         print(f"Error setting screen power to {state}: {e}", file=sys.stderr)
         return False
 
-# Screen Orientation Functions
-def get_orientation():
+# Updating toml config to store state.
+def update_kiosk_state(key, new_value):
+    """Updates a key within the [kiosk] section of the TOML file."""
     try:
-        with open("/etc/default/kiosk", "r") as f:
-            content = f.read()
-        match = re.search(r"KIOSK_ROTATION=(\d+)", content)
-        if match:
-            rot = match.group(1)
-            if rot == "1": return "portrait"
-            if rot == "2": return "landscape-inverted"
-            if rot == "3": return "portrait-inverted"
-        return "landscape"
-    except Exception:
-        return "landscape"
-
-def update_rotation(orientation):
-    rotation_map = {
-        "landscape": "0",
-        "portrait": "1",
-        "landscape-inverted": "2",
-        "portrait-inverted": "3"
-    }
-    rot_val = rotation_map.get(orientation, "0")
-    try:
-        content = f"KIOSK_ROTATION={rot_val}\n"
-        subprocess.run(["sudo", "tee", "/etc/default/kiosk"], input=content.encode(), check=True, stdout=subprocess.DEVNULL)
-        print(f"Updated /etc/default/kiosk to KIOSK_ROTATION={rot_val}. Restarting kiosk service...")
-        return restart_kiosk_service()
+        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+        
+        in_kiosk_section = False
+        for i, line in enumerate(lines):
+            if line.strip() == "[kiosk]":
+                in_kiosk_section = True
+                continue
+            elif line.strip().startswith("["):
+                in_kiosk_section = False
+                
+            if in_kiosk_section and line.strip().startswith(key):
+                # Format strings with quotes, integers without
+                val_str = f'"{new_value}"' if isinstance(new_value, str) else str(new_value)
+                lines[i] = f'{key} = {val_str}\n'
+                break
+                
+        with open(CONFIG_PATH, "w", encoding="utf-8") as f:
+            f.writelines(lines)
+        return True
     except Exception as e:
-        print(f"Error updating rotation: {e}", file=sys.stderr)
+        print(f"Error updating config.toml: {e}", file=sys.stderr)
         return False
+
 
 # MQTT Callbacks
 def on_connect(client, userdata, flags, rc):
@@ -179,14 +175,7 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe(f"{TOPIC_PREFIX}/reboot/set")
     
     # Publish Home Assistant Discovery Payloads
-    device_info = {
-        "identifiers": [CLIENT_ID],
-        "name": "Raspberry Pi Kiosk",
-        "model": "Pi 1 Model A+",
-        "manufacturer": "Raspberry Pi",
-        "sw_version": "1.0"
-    }
-    
+    device_info = DEVICE_INFO    
     discovery_configs = {
         "text": {
             "url": {
@@ -263,11 +252,12 @@ def on_connect(client, userdata, flags, rc):
             client.publish(topic, json.dumps(payload), retain=True)
             
     # Read current default_url from config
-    current_url = config.get("kiosk", {}).get("default_url", "https://example.com")
+    current_url = config["kiosk"]["default_url"]
+    current_orientation = INV_ROTATION_MAP[config["kiosk"]["orientation"]]
     
     # Publish Initial States
     client.publish(f"{TOPIC_PREFIX}/screen/state", get_screen_power(), retain=True)
-    client.publish(f"{TOPIC_PREFIX}/orientation/state", get_orientation(), retain=True)
+    client.publish(f"{TOPIC_PREFIX}/orientation/state", current_orientation, retain=True)
     client.publish(f"{TOPIC_PREFIX}/url/state", current_url, retain=True)
     
     # Automatically open the saved URL on startup to restore state with retry logic
@@ -282,7 +272,7 @@ def on_message(client, userdata, msg):
     
     if topic == f"{TOPIC_PREFIX}/url/set":
         if run_cogctl("open", payload, retries=3, delay=2.0):
-            update_config_url(payload)
+            update_kiosk_state("default_url", payload)
             client.publish(f"{TOPIC_PREFIX}/url/state", payload, retain=True)
         else:
             print(f"Error opening URL: {payload}", file=sys.stderr)
@@ -294,8 +284,9 @@ def on_message(client, userdata, msg):
                 
     elif topic == f"{TOPIC_PREFIX}/orientation/set":
         if payload in ["landscape", "portrait", "landscape-inverted", "portrait-inverted"]:
-            if update_rotation(payload):
+            if update_kiosk_state("orientation", ROTATION_MAP[payload]):
                 client.publish(f"{TOPIC_PREFIX}/orientation/state", payload, retain=True)
+                restart_kiosk_service()
                 
     elif topic == f"{TOPIC_PREFIX}/refresh/set":
         restart_kiosk_service()

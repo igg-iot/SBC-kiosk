@@ -1,6 +1,12 @@
 #!/bin/bash
 # Path to monitor status
 HDMI_STATUS="/sys/class/drm/card0-HDMI-A-1/status"
+export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
+
+CONFIG_PATH="/home/kiosk/.config/kiosk-mqtt-bridge/config.toml"
+
+# Dynamically extract rotation, default to 0 if missing
+KIOSK_ROTATION=$(python3 -c "import tomllib; print(tomllib.load(open('$CONFIG_PATH', 'rb')).get('kiosk', {}).get('orientation', 0))" 2>/dev/null || echo "0")
 
 # Infinite loop to keep the service "Active" even when the browser is sleeping
 while true; do
