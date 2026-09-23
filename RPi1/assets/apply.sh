@@ -28,10 +28,16 @@ echo "=========================================="
 echo "2. Install Core Kiosk Dependencies"
 echo "=========================================="
 apt-get update
-# --no-install-recommends is critical here to prevent APT from 
-# polluting the Pi with X11 utilities or display managers.
-DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+# Full dependency resolution; disk space is cheap, RAM/uptime is absolute.
+DEBIAN_FRONTEND=noninteractive apt-get install -y \
     cog \
+    libwpebackend-fdo-1.0-1 \
+    libwpe-1.0-1 \
+    libgles2 \
+    libegl1 \
+    libgbm1 \
+    libgl1-mesa-dri \
+    fonts-dejavu-core \
     python3-paho-mqtt \
     xz-utils \
     wget \
