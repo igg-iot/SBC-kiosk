@@ -43,6 +43,18 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y \
     wget \
     curl
 
+# Fix Netplan permissions to prevent the 1m20s NetworkManager loop
+chmod 600 /lib/netplan/00-network-manager-all.yaml
+chmod 600 /etc/netplan/*.yaml 2>/dev/null
+
+# Kill cloud-init to reclaim ~45s of boot time
+touch /etc/cloud/cloud-init.disabled
+
+# Avoid entropy starvation
+sudo apt install haveged
+sudo systemctl enable haveged
+## Note that none of the above improved the 2 minute NetworkManager start.
+
 echo "=========================================="
 echo "3. Management Interface Installation"
 echo "=========================================="
